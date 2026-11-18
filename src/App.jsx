@@ -231,6 +231,102 @@ export default function App() {
           </main>
         </div>
       )}
+      {showPlayerModal && (
+        <div
+          onClick={() => setShowPlayerModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.78)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#111827',
+              color: '#ffffff',
+              width: '100%',
+              maxWidth: 480,
+              borderRadius: 12,
+              border: '1px solid #374151',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Viršutinė juosta */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', background: '#09090b', borderBottom: '1px solid #1f2937' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: '#22c55e', fontSize: 14 }}>●</span>
+                <strong style={{ letterSpacing: 0.5 }}>PLAY RADIO — TIESIOGIAI</strong>
+              </div>
+              <button
+                onClick={() => setShowPlayerModal(false)}
+                style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: 20, cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Pagrindinė grojančios dainos informacija */}
+            <div style={{ padding: 24, textAlign: 'center', background: 'linear-gradient(180deg, #1f2937 0%, #111827 100%)' }}>
+              <div style={{ width: 84, height: 84, margin: '0 auto 14px', borderRadius: '50%', background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, boxShadow: '0 0 25px rgba(239,68,68,0.5)' }}>
+                🎧
+              </div>
+              <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: '#ef4444', fontWeight: 800, marginBottom: 6 }}>
+                Šiuo metu eteryje
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>{liveTrack}</div>
+              <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 18 }}>
+                More Hits! • Kokybė: 128 kbps Stereo • +2 UTC
+              </div>
+
+              {/* Valdymo mygtukai ir garsas */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                <button
+                  onClick={() => togglePlay(false)}
+                  style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 999, fontWeight: 800, cursor: 'pointer', fontSize: 14 }}
+                >
+                  {isPlaying ? '❚❚ SUSTABDYTI' : '► GROTI'}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 14 }}>🔊</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={volume}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setVolume(v);
+                      if (audioRef.current) audioRef.current.volume = v;
+                    }}
+                    style={{ width: 90 }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Paskutinės grojusios dainos (Previous Tracks) */}
+            <div style={{ padding: '16px 20px', background: '#09090b', borderTop: '1px solid #1f2937' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+                Neseniai grojo eteryje
+              </div>
+              {prevTracks.map((t, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: idx < prevTracks.length - 1 ? '1px solid #1f2937' : 'none', fontSize: 13 }}>
+                  <span><strong>{t.artist}</strong> — {t.title}</span>
+                  <span style={{ color: '#6b7280', fontSize: 11 }}>{t.album}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
                <div className="bottom-radio-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="player-circle-btn" onClick={togglePlay}>{isPlaying ? '■' : '►'}</button>
