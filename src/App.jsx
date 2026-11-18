@@ -81,17 +81,24 @@ export default function App() {
       console.error(error);
     }
   };
-  const togglePlay = () => {
+  const togglePlay = (openModal = false) => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (isPlaying) { audio.pause(); setIsPlaying(false); }
-    else {
+    if (isPlaying && !openModal) {
+      audio.pause();
+      setIsPlaying(false);
+    } else {
       const targetSrc = `https://stream${'.'}radiojar${'.'}com/d9cm273ystzuv`;
       if (!audio.src || !audio.src.includes('d9cm273ystzuv')) audio.src = targetSrc;
       audio.volume = volume;
       const p = audio.play();
       if (p !== undefined) {
-        p.then(() => setIsPlaying(true)).catch((err) => { if (err.name !== 'AbortError') console.error(err); });
+        p.then(() => {
+          setIsPlaying(true);
+          if (openModal) setShowPlayerModal(true);
+        }).catch((err) => {
+          if (err.name !== 'AbortError') console.error(err);
+        });
       }
     }
   };
