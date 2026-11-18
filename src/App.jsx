@@ -55,42 +55,37 @@ export default function App() {
   }, [settings]);
 
    useEffect(() => {
+    const demoTracks = [
+      'Tame Impala - Dracula',
+      'Karol G, Judeline & rusowsky - BbY WOW',
+      'Sabrina Carpenter - Espresso',
+      'Teddy Swims - Lose Control',
+      'Dua Lipa - Training Season',
+    ];
+    let idx = 0;
+
     const fetchSong = async () => {
-      const target = `https://playradio.lt{Date.now()}`;
-      const urls = [
-        target,
-        `https://allorigins.win{encodeURIComponent(target)}`,
-        `https://codetabs.com{encodeURIComponent(target)}`,
-      ];
+      try {
+        const { data } = await supabase
+          .from('site_data')
+          .select('value')
+          .eq('key', 'now_playing')
+          .single();
 
-      for (const u of urls) {
-        try {
-          const res = await fetch(u);
-          if (!res.ok) continue;
-          const html = await res.text();
-          const plain = html
-            .replace(/<[^>]*>/g, ' ')
-            .replace(/&amp;/g, '&')
-            .replace(/&quot;/g, '"')
-            .replace(/&#039;/g, "'")
-            .replace(/&nbsp;/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
+        if (data && data.value && data.value.track) {
+          setLiveTrack(data.value.track);
+          return;
+        }
+      } catch (e) {}
 
-          const match = plain.match(/Artist:\s*(.*?)\s*Title:\s*(.*?)\s*(?:Album:|Year:|Previous|$)/i);
-          if (match && match.at(1) && match.at(2)) {
-            setLiveTrack(`${match.at(1).trim()} - ${match.at(2).trim()}`);
-            return;
-          }
-        } catch (e) {}
-      }
+      setLiveTrack(demoTracks.at(idx % demoTracks.length));
+      idx += 1;
     };
 
     fetchSong();
     const timer = setInterval(fetchSong, 15000);
     return () => clearInterval(timer);
   }, []);
-
   const saveCloud = async (key, value) => {
     const { error } = await supabase.from('site_data').upsert({ key, value }, { onConflict: 'key' });
     if (error) {
