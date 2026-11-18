@@ -77,18 +77,37 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
+      useEffect(() => {
     if (!liveTrack || liveTrack.includes('PlayRadio.lt')) return;
-    // Išvalome skliaustelius (pvz. "(4 Christmas)"), kad iTunes visada rastų tikrą viršelį
-    const cleanQuery = liveTrack.replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
-    fetch(`https://apple.com{encodeURIComponent(cleanQuery)}&entity=song&limit=1`)
-      .then((r) => r.json())
-      .then((d) => {
-        const art = d.results?.at(0)?.artworkUrl100;
-        if (art) setCoverUrl(art.replace('100x100', '600x600'));
-      })
-      .catch(() => {});
+
+    const clean = liveTrack
+      .replace(/[–—]/g, '-')
+      .replace(/\([^)]*\)/g, '')
+      .replace(/\[[^\]]*\]/g, '')
+      .replace(/\b(feat\.?|ft\.?|remix|edit|mix)\b.*/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const cbName = 'dzCb_' + Math.floor(Math.random() * 100000);
+    window[cbName] = (res) => {
+      const cover = res?.data?.at(0)?.album?.cover_big;
+      if (cover) {
+        setCoverUrl(cover);
+      }
+      delete window[cbName];
+    };
+
+    const script = document.createElement('script');
+    const host = 'api' + '.' + 'deezer' + '.' + 'com';
+    script.src = `https://${host}/search?q=${encodeURIComponent(clean)}&limit=1&output=jsonp&callback=${cbName}`;
+    document.body.appendChild(script);
+
+    return () => {
+      script.remove();
+    };
   }, [liveTrack]);
+
+
 
 
   const saveCloud = async (key, value) => {
