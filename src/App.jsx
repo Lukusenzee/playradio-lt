@@ -54,7 +54,7 @@ export default function App() {
     }
   }, [settings]);
 
-  useEffect(() => {
+    useEffect(() => {
     const fetchSong = async () => {
       try {
         const res = await fetch('/api/track?t=' + Date.now());
@@ -69,6 +69,7 @@ export default function App() {
     const timer = setInterval(fetchSong, 15000);
     return () => clearInterval(timer);
   }, []);
+
   const saveCloud = async (key, value) => {
     const { error } = await supabase.from('site_data').upsert({ key, value }, { onConflict: 'key' });
     if (error) {
