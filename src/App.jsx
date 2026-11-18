@@ -20,6 +20,10 @@ export default function App() {
   const sPlay = useState(false), isPlaying = sPlay.at(0), setIsPlaying = sPlay.at(1);
   const sVol = useState(0.8), volume = sVol.at(0), setVolume = sVol.at(1);
   const sTrk = useState('PlayRadio.lt — More Hits!'), liveTrack = sTrk.at(0), setLiveTrack = sTrk.at(1);
+    const sModal = useState(false), showPlayerModal = sModal.at(0), setShowPlayerModal = sModal.at(1);
+    const sCov = useState('https://unsplash.com'), coverUrl = sCov.at(0), setCoverUrl = sCov.at(1);
+
+
   const audioRef = useRef(null);
   const sA1 = useState('posts'), adminTab = sA1.at(0), setAdminTab = sA1.at(1);
   const sEdit = useState(null), editId = sEdit.at(0), setEditId = sEdit.at(1);
@@ -44,6 +48,16 @@ export default function App() {
     };
     loadCloud();
   }, []);
+  useEffect(() => {
+    if (!liveTrack || liveTrack.includes('PlayRadio.lt')) return;
+    fetch(`https://apple.com{encodeURIComponent(liveTrack)}&entity=song&limit=1`)
+      .then((r) => r.json())
+      .then((d) => {
+        const art = d.results?.at(0)?.artworkUrl100;
+        if (art) setCoverUrl(art.replace('100x100', '600x600'));
+      })
+      .catch(() => {});
+  }, [liveTrack]);
 
   useEffect(() => {
     if (settings.bgImage) {
@@ -185,7 +199,12 @@ export default function App() {
         <div className="site-wrapper">
           <aside className="left-sidebar" style={{ paddingTop: 205 }}>
             <ul className="side-menu">
-              <li><button className={`play-item ${isPlaying ? 'playing' : ''}`} onClick={togglePlay}>{isPlaying ? '❚❚ SUSTABDYTI' : '► PLAY / GROTI'}</button></li>
+                            <li>
+                <button className={`play-item ${isPlaying ? 'playing' : ''}`} onClick={() => togglePlay(true)}>
+                  {isPlaying ? '🔊 GROJA (ATIDARYTI INFO)' : '► PLAY / GROTI'}
+                </button>
+              </li>
+
               {menu.map((m) => (<li key={m}><button className={activeTab === m && !selectedPost ? 'active' : ''} onClick={() => { setActiveTab(m); setSelectedPost(null); }}>{m}</button></li>))}
             </ul>
           </aside>
@@ -244,7 +263,7 @@ export default function App() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.78)',
+            background: 'rgba(0, 0, 0, 0.45)',
             zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
@@ -255,82 +274,71 @@ export default function App() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#111827',
+              background: '#191512',
               color: '#ffffff',
-              width: '100%',
-              maxWidth: 480,
-              borderRadius: 12,
-              border: '1px solid #374151',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
-              overflow: 'hidden',
+              width: 310,
+              padding: '24px 24px 28px',
+              textAlign: 'center',
+              position: 'relative',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.65)',
+              fontFamily: 'Arial, Helvetica, sans-serif',
             }}
           >
-            {/* Viršutinė juosta */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', background: '#09090b', borderBottom: '1px solid #1f2937' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: '#22c55e', fontSize: 14 }}>●</span>
-                <strong style={{ letterSpacing: 0.5 }}>PLAY RADIO — TIESIOGIAI</strong>
-              </div>
-              <button
-                onClick={() => setShowPlayerModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: 20, cursor: 'pointer' }}
-              >
-                ✕
-              </button>
+            {/* Mažas uždarymo kryžiukas viršuje dešinėje */}
+            <button
+              onClick={() => setShowPlayerModal(false)}
+              style={{
+                position: 'absolute',
+                top: 6,
+                right: 8,
+                background: 'transparent',
+                border: 'none',
+                color: 'rgba(255,255,255,0.45)',
+                fontSize: 15,
+                cursor: 'pointer',
+              }}
+              title="Uždaryti (muzika gros toliau)"
+            >
+              ✕
+            </button>
+
+            {/* Kvadratinis albumo viršelis */}
+            <div style={{ width: 262, height: 262, margin: '0 auto 18px', background: '#09090b', overflow: 'hidden' }}>
+              <img
+                src={coverUrl}
+                alt={liveTrack}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
             </div>
 
-            {/* Pagrindinė grojančios dainos informacija */}
-            <div style={{ padding: 24, textAlign: 'center', background: 'linear-gradient(180deg, #1f2937 0%, #111827 100%)' }}>
-              <div style={{ width: 84, height: 84, margin: '0 auto 14px', borderRadius: '50%', background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, boxShadow: '0 0 25px rgba(239,68,68,0.5)' }}>
-                🎧
-              </div>
-              <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: '#ef4444', fontWeight: 800, marginBottom: 6 }}>
-                Šiuo metu eteryje
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>{liveTrack}</div>
-              <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 18 }}>
-                More Hits! • Kokybė: 128 kbps Stereo • +2 UTC
-              </div>
-
-              {/* Valdymo mygtukai ir garsas */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-                <button
-                  onClick={() => togglePlay(false)}
-                  style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 999, fontWeight: 800, cursor: 'pointer', fontSize: 14 }}
-                >
-                  {isPlaying ? '❚❚ SUSTABDYTI' : '► GROTI'}
-                </button>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 14 }}>🔊</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={volume}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      setVolume(v);
-                      if (audioRef.current) audioRef.current.volume = v;
-                    }}
-                    style={{ width: 90 }}
-                  />
-                </div>
-              </div>
+            {/* Atlikėjas ir daina (identiškai kaip nuotraukoje) */}
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.2px', marginBottom: 4, lineHeight: 1.2 }}>
+              {liveTrack.includes(' - ') ? liveTrack.split(' - ').at(0) : 'PlayRadio.lt'}
+            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: '#f3f4f6', marginBottom: 22 }}>
+              {liveTrack.includes(' - ') ? liveTrack.split(' - ').slice(1).join(' - ') : 'More Hits!'}
             </div>
 
-            {/* Paskutinės grojusios dainos (Previous Tracks) */}
-            <div style={{ padding: '16px 20px', background: '#09090b', borderTop: '1px solid #1f2937' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-                Neseniai grojo eteryje
-              </div>
-              {prevTracks.map((t, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: idx < prevTracks.length - 1 ? '1px solid #1f2937' : 'none', fontSize: 13 }}>
-                  <span><strong>{t.artist}</strong> — {t.title}</span>
-                  <span style={{ color: '#6b7280', fontSize: 11 }}>{t.album}</span>
-                </div>
-              ))}
-            </div>
+            {/* Apvalus minimalistinis „Stop“ / „Play“ mygtukas */}
+            <button
+              onClick={() => togglePlay(false)}
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: '50%',
+                background: 'transparent',
+                border: '1.5px solid rgba(255, 255, 255, 0.75)',
+                color: '#ffffff',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {isPlaying ? 'Stop' : 'Play'}
+            </button>
           </div>
         </div>
       )}
