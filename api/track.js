@@ -1,11 +1,22 @@
-export default async function handler(req, res) {
-  try {
-    const r = await fetch('https://playradio.lt' + Date.now(), {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-    });
-    const html = await r.text();
+export const config = {
+  runtime: 'edge',
+};
 
-    // Paverčiame visą HTML į švarų tekstą be jokių žymių
+export default async function handler() {
+  try {
+    const r = await fetch(
+      `https://playradio.lt{Date.now()}`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'lt-LT,lt;q=0.9,en;q=0.8',
+          'Referer': 'https://playradio.lt',
+        },
+      }
+    );
+
+    const html = await r.text();
     const plain = html
       .replace(/<[^>]*>/g, ' ')
       .replace(/&amp;/g, '&')
@@ -15,18 +26,16 @@ export default async function handler(req, res) {
       .replace(/\s+/g, ' ')
       .trim();
 
-    // Paimame pirmąjį Artist ir pirmąjį Title iš švaraus teksto
     const match = plain.match(/Artist:\s*(.*?)\s*Title:\s*(.*?)\s*(?:Album:|Year:|Previous|$)/i);
-
-    res.setHeader('Cache-Control', 'no-store');
     if (match && match.at(1) && match.at(2)) {
-      const artist = match.at(1).trim();
-      const title = match.at(2).trim();
-      return res.status(200).json({ artist, title });
+      return new Response(
+        JSON.stringify({ track: `${match.at(1).trim()} - ${match.at(2).trim()}` }),
+        { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+      );
     }
 
-    res.status(200).json({ title: 'PlayRadio.lt — More Hits!', debug: plain.slice(0, 200) });
+    return new Response(JSON.stringify({ track: '' }), { headers: { 'Content-Type': 'application/json' } });
   } catch (e) {
-    res.status(200).json({ title: 'PlayRadio.lt — More Hits!', error: e.message });
+    return new Response(JSON.stringify({ track: '' }), { headers: { 'Content-Type': 'application/json' } });
   }
 }

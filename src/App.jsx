@@ -54,38 +54,21 @@ export default function App() {
     }
   }, [settings]);
 
-   useEffect(() => {
-    const demoTracks = [
-      'Tame Impala - Dracula',
-      'Karol G, Judeline & rusowsky - BbY WOW',
-      'Sabrina Carpenter - Espresso',
-      'Teddy Swims - Lose Control',
-      'Dua Lipa - Training Season',
-    ];
-    let idx = 0;
-
+    useEffect(() => {
     const fetchSong = async () => {
       try {
-        const { data } = await supabase
-          .from('site_data')
-          .select('value')
-          .eq('key', 'now_playing')
-          .single();
-
-        if (data && data.value && data.value.track) {
-          setLiveTrack(data.value.track);
-          return;
-        }
+        const res = await fetch('/api/track?t=' + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.track) setLiveTrack(data.track);
       } catch (e) {}
-
-      setLiveTrack(demoTracks.at(idx % demoTracks.length));
-      idx += 1;
     };
 
     fetchSong();
     const timer = setInterval(fetchSong, 15000);
     return () => clearInterval(timer);
   }, []);
+
   const saveCloud = async (key, value) => {
     const { error } = await supabase.from('site_data').upsert({ key, value }, { onConflict: 'key' });
     if (error) {
