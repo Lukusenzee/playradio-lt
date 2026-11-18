@@ -67,13 +67,11 @@ export default function App() {
           .select('value')
           .eq('key', 'now_playing')
           .single();
-
         if (data && data.value && data.value.track) {
           setLiveTrack(data.value.track);
         }
       } catch (e) {}
     };
-
     fetchSong();
     const timer = setInterval(fetchSong, 5000);
     return () => clearInterval(timer);
