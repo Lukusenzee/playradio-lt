@@ -59,23 +59,18 @@ export default function App() {
     }
   }, [settings]);
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchSong = async () => {
       try {
-        const { data } = await supabase
-          .from('site_data')
-          .select('value')
-          .eq('key', 'now_playing')
-          .single();
-
-        if (data && data.value && data.value.track) {
-          setLiveTrack(data.value.track);
-        }
+        const res = await fetch('/api/track?t=' + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.track) setLiveTrack(data.track);
       } catch (e) {}
     };
 
     fetchSong();
-    const timer = setInterval(fetchSong, 10000);
+    const timer = setInterval(fetchSong, 15000);
     return () => clearInterval(timer);
   }, []);
 
@@ -103,7 +98,7 @@ export default function App() {
   const togglePlay = (openModal = false) => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (isPlaying && !openModal) {
+    if (isPlaying && openModal !== true) {
       audio.pause();
       setIsPlaying(false);
     } else {
@@ -114,13 +109,14 @@ export default function App() {
       if (p !== undefined) {
         p.then(() => {
           setIsPlaying(true);
-          if (openModal) setShowPlayerModal(true);
+          if (openModal === true) setShowPlayerModal(true);
         }).catch((err) => {
           if (err.name !== 'AbortError') console.error(err);
         });
       }
     }
   };
+
 
   const addPost = (e) => {
     e.preventDefault();

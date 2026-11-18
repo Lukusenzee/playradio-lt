@@ -1,41 +1,44 @@
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler() {
+export default async function handler(req, res) {
   try {
-    const r = await fetch(
-      `https://playradio.lt{Date.now()}`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml',
-          'Accept-Language': 'lt-LT,lt;q=0.9,en;q=0.8',
-          'Referer': 'https://playradio.lt',
-        },
-      }
-    );
+    // 1. Sužinome tikslų aktyvų Radiojar transliacijos serverį (po 302 peradresavimo)
+    const headRes = await fetch('https://radiojar.com', {
+      method: 'GET',
+      headers: { 'Icy-MetaData': '1', 'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18' },
+      redirect: 'follow',
+    });
 
-    const html = await r.text();
-    const plain = html
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&quot;/g, '"')
-      .replace(/&#039;/g, "'")
-      .replace(/&nbsp;/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const match = plain.match(/Artist:\s*(.*?)\s*Title:\s*(.*?)\s*(?:Album:|Year:|Previous|$)/i);
-    if (match && match.at(1) && match.at(2)) {
-      return new Response(
-        JSON.stringify({ track: `${match.at(1).trim()} - ${match.at(2).trim()}` }),
-        { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
-      );
+    const metaint = Number(headRes.headers.get('icy-metaint'));
+    if (!metaint || !headRes.body) {
+      return res.status(200).json({ track: '' });
     }
 
-    return new Response(JSON.stringify({ track: '' }), { headers: { 'Content-Type': 'application/json' } });
+    // 2. Skaitome garso srautą iki pirmojo metaduomenų bloko (metaint + 4096 baitų)
+    const reader = headRes.body.getReader();
+    const chunks = [];
+    let totalBytes = 0;
+
+    while (totalBytes < metaint + 4096) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      totalBytes += value.length;
+    }
+    await reader.cancel();
+
+    // 3. Iškerpame StreamTitle='Atlikėjas - Daina'
+    const buffer = Buffer.concat(chunks);
+    const metaLength = buffer[metaint] * 16;
+    if (metaLength > 0 && buffer.length >= metaint + 1 + metaLength) {
+      const metaText = buffer.subarray(metaint + 1, metaint + 1 + metaLength).toString('utf8');
+      const match = metaText.match(/StreamTitle='([^']*)'/);
+      if (match && match.at(1)) {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(200).json({ track: match.at(1).trim() });
+      }
+    }
+
+    res.status(200).json({ track: '' });
   } catch (e) {
-    return new Response(JSON.stringify({ track: '' }), { headers: { 'Content-Type': 'application/json' } });
+    res.status(200).json({ track: '' });
   }
 }
