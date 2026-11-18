@@ -59,18 +59,23 @@ export default function App() {
     }
   }, [settings]);
 
-   useEffect(() => {
+    useEffect(() => {
     const fetchSong = async () => {
       try {
-        const res = await fetch('/api/track?t=' + Date.now());
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.track) setLiveTrack(data.track);
+        const { data } = await supabase
+          .from('site_data')
+          .select('value')
+          .eq('key', 'now_playing')
+          .single();
+
+        if (data && data.value && data.value.track) {
+          setLiveTrack(data.value.track);
+        }
       } catch (e) {}
     };
 
     fetchSong();
-    const timer = setInterval(fetchSong, 15000);
+    const timer = setInterval(fetchSong, 5000);
     return () => clearInterval(timer);
   }, []);
 
