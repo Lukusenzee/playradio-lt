@@ -59,7 +59,7 @@ export default function App() {
     }
   }, [settings]);
 
-  useEffect(() => {
+   useEffect(() => {
     const fetchSong = async () => {
       try {
         const res = await fetch('/api/track?t=' + Date.now());
