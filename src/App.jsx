@@ -226,16 +226,35 @@ export default function App() {
           </main>
         </div>
       )}
-      <div className="bottom-radio-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+           <div className="bottom-radio-bar" style={{ padding: '4px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
           <button className="player-circle-btn" onClick={togglePlay}>{isPlaying ? '■' : '►'}</button>
           <div>
-            <div style={{ fontSize: 11, color: isPlaying ? '#22c55e' : '#ef4444', fontWeight: 800 }}>{isPlaying ? '● GROJA TIESIOGIAI' : '○ ETERYJE'}</div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>{liveTrack}</div>
+            <div style={{ fontSize: 11, color: isPlaying ? '#22c55e' : '#ef4444', fontWeight: 800 }}>
+              {isPlaying ? '● GROJA TIESIOGIAI' : '○ ETERYJE'}
+            </div>
+            <iframe
+              src="https://radiojar.com"
+              style={{ border: 'none', height: 28, width: 320, background: 'transparent' }}
+              title="PlayRadio Live Track"
+            />
           </div>
         </div>
-        <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => { const v = Number(e.target.value); setVolume(v); if (audioRef.current) audioRef.current.volume = v; }} style={{ width: 90 }} />
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={volume}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setVolume(v);
+            if (audioRef.current) audioRef.current.volume = v;
+          }}
+          style={{ width: 90 }}
+        />
       </div>
+
       <audio ref={audioRef} preload="none" />
     </>
   );
