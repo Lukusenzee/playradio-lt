@@ -56,14 +56,30 @@ export default function App() {
 
   useEffect(() => {
     const fetchSong = async () => {
-      try {
-        const target = `https://www${'.'}radiojar${'.'}com/api/stations/d9cm273ystzuv/now_playing/`;
-        const res = await fetch(`https://allorigins.win{encodeURIComponent(target)}&t=${Date.now()}`);
-        const data = await res.json();
-        if (data.artist && data.title) setLiveTrack(`${data.artist} - ${data.title}`);
-        else if (data.title) setLiveTrack(data.title);
-      } catch (e) { console.log('Waiting for live track'); }
+      const stationId = 'd9cm273ystzuv';
+      const target = `https://radiojar.com{stationId}/now_playing/`;
+      const proxies = [
+        `https://corsproxy.io{encodeURIComponent(target)}`,
+        `https://allorigins.win{encodeURIComponent(target)}&t=${Date.now()}`,
+      ];
+
+      for (const url of proxies) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (data.artist && data.title) {
+            setLiveTrack(`${data.artist} - ${data.title}`);
+            return;
+          }
+          if (data.title) {
+            setLiveTrack(data.title);
+            return;
+          }
+        } catch (e) {}
+      }
     };
+
     fetchSong();
     const timer = setInterval(fetchSong, 15000);
     return () => clearInterval(timer);
