@@ -56,28 +56,13 @@ export default function App() {
 
   useEffect(() => {
     const fetchSong = async () => {
-      const stationId = 'd9cm273ystzuv';
-      const target = `https://radiojar.com{stationId}/now_playing/`;
-      const proxies = [
-        `https://corsproxy.io{encodeURIComponent(target)}`,
-        `https://allorigins.win{encodeURIComponent(target)}&t=${Date.now()}`,
-      ];
-
-      for (const url of proxies) {
-        try {
-          const res = await fetch(url);
-          if (!res.ok) continue;
-          const data = await res.json();
-          if (data.artist && data.title) {
-            setLiveTrack(`${data.artist} - ${data.title}`);
-            return;
-          }
-          if (data.title) {
-            setLiveTrack(data.title);
-            return;
-          }
-        } catch (e) {}
-      }
+      try {
+        const res = await fetch('/api/track?t=' + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.artist && data.title) setLiveTrack(`${data.artist} - ${data.title}`);
+        else if (data.title) setLiveTrack(data.title);
+      } catch (e) {}
     };
 
     fetchSong();
@@ -186,7 +171,7 @@ export default function App() {
         </div>
       ) : (
         <div className="site-wrapper">
-          <aside className="left-sidebar" style={{ paddingTop: 95 }}>
+          <aside className="left-sidebar" style={{ paddingTop: 205 }}>
             <ul className="side-menu">
               <li><button className={`play-item ${isPlaying ? 'playing' : ''}`} onClick={togglePlay}>{isPlaying ? '❚❚ SUSTABDYTI' : '► PLAY / GROTI'}</button></li>
               {menu.map((m) => (<li key={m}><button className={activeTab === m && !selectedPost ? 'active' : ''} onClick={() => { setActiveTab(m); setSelectedPost(null); }}>{m}</button></li>))}
