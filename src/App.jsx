@@ -48,16 +48,7 @@ export default function App() {
     };
     loadCloud();
   }, []);
-  useEffect(() => {
-    if (!liveTrack || liveTrack.includes('PlayRadio.lt')) return;
-    fetch(`https://apple.com{encodeURIComponent(liveTrack)}&entity=song&limit=1`)
-      .then((r) => r.json())
-      .then((d) => {
-        const art = d.results?.at(0)?.artworkUrl100;
-        if (art) setCoverUrl(art.replace('100x100', '600x600'));
-      })
-      .catch(() => {});
-  }, [liveTrack]);
+ 
 
   useEffect(() => {
     if (settings.bgImage) {
@@ -84,9 +75,23 @@ export default function App() {
     };
 
     fetchSong();
-    const timer = setInterval(fetchSong, 15000);
+    const timer = setInterval(fetchSong, 10000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!liveTrack || liveTrack.includes('PlayRadio.lt')) return;
+    // Išvalome skliaustelius (pvz. "(4 Christmas)"), kad iTunes visada rastų tikrą viršelį
+    const cleanQuery = liveTrack.replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
+    fetch(`https://apple.com{encodeURIComponent(cleanQuery)}&entity=song&limit=1`)
+      .then((r) => r.json())
+      .then((d) => {
+        const art = d.results?.at(0)?.artworkUrl100;
+        if (art) setCoverUrl(art.replace('100x100', '600x600'));
+      })
+      .catch(() => {});
+  }, [liveTrack]);
+
 
   const saveCloud = async (key, value) => {
     const { error } = await supabase.from('site_data').upsert({ key, value }, { onConflict: 'key' });
