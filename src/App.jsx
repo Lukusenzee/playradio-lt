@@ -186,7 +186,7 @@ export default function App() {
         </div>
       ) : (
         <div className="site-wrapper">
-          <aside className="left-sidebar" style={{ paddingTop: 95 }}>
+          <aside className="left-sidebar" style={{ paddingTop: 215 }}>
             <ul className="side-menu">
               <li><button className={`play-item ${isPlaying ? 'playing' : ''}`} onClick={togglePlay}>{isPlaying ? '❚❚ SUSTABDYTI' : '► PLAY / GROTI'}</button></li>
               {menu.map((m) => (<li key={m}><button className={activeTab === m && !selectedPost ? 'active' : ''} onClick={() => { setActiveTab(m); setSelectedPost(null); }}>{m}</button></li>))}
