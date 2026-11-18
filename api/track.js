@@ -1,44 +1,34 @@
 export default async function handler(req, res) {
   try {
-    // 1. Sužinome tikslų aktyvų Radiojar transliacijos serverį (po 302 peradresavimo)
-    const headRes = await fetch('https://radiojar.com', {
-      method: 'GET',
-      headers: { 'Icy-MetaData': '1', 'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18' },
-      redirect: 'follow',
+    const r = await fetch(`https://playradio.top{Date.now()}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Referer': 'https://playradio.top',
+      },
     });
 
-    const metaint = Number(headRes.headers.get('icy-metaint'));
-    if (!metaint || !headRes.body) {
-      return res.status(200).json({ track: '' });
+    const html = await r.text();
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const m = text.match(/Artist:\s*([^:]+?)\s*Title:\s*([^:]+?)\s*(?:Album:|Year:|Previous|$)/i);
+    res.setHeader('Cache-Control', 'no-store');
+
+    if (m && m.at(1) && m.at(2)) {
+      return res.status(200).json({ track: `${m.at(1).trim()} - ${m.at(2).trim()}` });
     }
 
-    // 2. Skaitome garso srautą iki pirmojo metaduomenų bloko (metaint + 4096 baitų)
-    const reader = headRes.body.getReader();
-    const chunks = [];
-    let totalBytes = 0;
-
-    while (totalBytes < metaint + 4096) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      totalBytes += value.length;
-    }
-    await reader.cancel();
-
-    // 3. Iškerpame StreamTitle='Atlikėjas - Daina'
-    const buffer = Buffer.concat(chunks);
-    const metaLength = buffer[metaint] * 16;
-    if (metaLength > 0 && buffer.length >= metaint + 1 + metaLength) {
-      const metaText = buffer.subarray(metaint + 1, metaint + 1 + metaLength).toString('utf8');
-      const match = metaText.match(/StreamTitle='([^']*)'/);
-      if (match && match.at(1)) {
-        res.setHeader('Cache-Control', 'no-store');
-        return res.status(200).json({ track: match.at(1).trim() });
-      }
-    }
-
-    res.status(200).json({ track: '' });
+    res.status(200).json({ track: '', debug: text.slice(0, 250) });
   } catch (e) {
-    res.status(200).json({ track: '' });
+    res.status(200).json({ track: '', error: e.message });
   }
 }
