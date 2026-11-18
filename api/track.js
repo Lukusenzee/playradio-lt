@@ -5,19 +5,28 @@ export default async function handler(req, res) {
     });
     const html = await r.text();
 
-    // Ištraukiame pirmąjį Artist ir Title (Currently Playing)
-    const artistMatch = html.match(/Artist:\s*<\/[^>]+>\s*([^<]+)/i) || html.match(/Artist:\s*([^\n<]+)/i);
-    const titleMatch = html.match(/Title:\s*<\/[^>]+>\s*([^<]+)/i) || html.match(/Title:\s*([^\n<]+)/i);
+    // Paverčiame visą HTML į švarų tekstą be jokių žymių
+    const plain = html
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    const artist = artistMatch ? artistMatch.at(1).replace(/\*/g, '').trim() : '';
-    const title = titleMatch ? titleMatch.at(1).replace(/\*/g, '').trim() : '';
+    // Paimame pirmąjį Artist ir pirmąjį Title iš švaraus teksto
+    const match = plain.match(/Artist:\s*(.*?)\s*Title:\s*(.*?)\s*(?:Album:|Year:|Previous|$)/i);
 
     res.setHeader('Cache-Control', 'no-store');
-    if (artist && title) {
-      return res.status(200).json({ artist, title, full: `${artist} - ${title}` });
+    if (match && match.at(1) && match.at(2)) {
+      const artist = match.at(1).trim();
+      const title = match.at(2).trim();
+      return res.status(200).json({ artist, title });
     }
-    res.status(200).json({ title: 'PlayRadio.lt — More Hits!' });
+
+    res.status(200).json({ title: 'PlayRadio.lt — More Hits!', debug: plain.slice(0, 200) });
   } catch (e) {
-    res.status(200).json({ title: 'PlayRadio.lt — More Hits!' });
+    res.status(200).json({ title: 'PlayRadio.lt — More Hits!', error: e.message });
   }
 }
