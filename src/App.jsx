@@ -54,15 +54,36 @@ export default function App() {
     }
   }, [settings]);
 
-    useEffect(() => {
+   useEffect(() => {
     const fetchSong = async () => {
-      try {
-        const res = await fetch('/api/track?t=' + Date.now());
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.artist && data.title) setLiveTrack(`${data.artist} - ${data.title}`);
-        else if (data.title) setLiveTrack(data.title);
-      } catch (e) {}
+      const target = `https://playradio.lt{Date.now()}`;
+      const urls = [
+        target,
+        `https://allorigins.win{encodeURIComponent(target)}`,
+        `https://codetabs.com{encodeURIComponent(target)}`,
+      ];
+
+      for (const u of urls) {
+        try {
+          const res = await fetch(u);
+          if (!res.ok) continue;
+          const html = await res.text();
+          const plain = html
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#039;/g, "'")
+            .replace(/&nbsp;/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          const match = plain.match(/Artist:\s*(.*?)\s*Title:\s*(.*?)\s*(?:Album:|Year:|Previous|$)/i);
+          if (match && match.at(1) && match.at(2)) {
+            setLiveTrack(`${match.at(1).trim()} - ${match.at(2).trim()}`);
+            return;
+          }
+        } catch (e) {}
+      }
     };
 
     fetchSong();
