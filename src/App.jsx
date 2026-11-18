@@ -54,13 +54,18 @@ export default function App() {
     }
   }, [settings]);
 
-    useEffect(() => {
+   useEffect(() => {
     const fetchSong = async () => {
       try {
-        const res = await fetch('/api/track?t=' + Date.now());
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.track) setLiveTrack(data.track);
+        const { data } = await supabase
+          .from('site_data')
+          .select('value')
+          .eq('key', 'now_playing')
+          .single();
+
+        if (data && data.value && data.value.track) {
+          setLiveTrack(data.value.track);
+        }
       } catch (e) {}
     };
 
@@ -226,18 +231,14 @@ export default function App() {
           </main>
         </div>
       )}
-           <div className="bottom-radio-bar" style={{ padding: '4px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+               <div className="bottom-radio-bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="player-circle-btn" onClick={togglePlay}>{isPlaying ? '■' : '►'}</button>
           <div>
             <div style={{ fontSize: 11, color: isPlaying ? '#22c55e' : '#ef4444', fontWeight: 800 }}>
               {isPlaying ? '● GROJA TIESIOGIAI' : '○ ETERYJE'}
             </div>
-            <iframe
-              src="https://radiojar.com"
-              style={{ border: 'none', height: 28, width: 320, background: 'transparent' }}
-              title="PlayRadio Live Track"
-            />
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{liveTrack}</div>
           </div>
         </div>
         <input
@@ -254,6 +255,7 @@ export default function App() {
           style={{ width: 90 }}
         />
       </div>
+
 
       <audio ref={audioRef} preload="none" />
     </>
