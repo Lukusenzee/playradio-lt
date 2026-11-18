@@ -1,46 +1,21 @@
 export default async function handler(req, res) {
   try {
-    // 1. Pirmiausia bandome Radiojar JSON API
-    const apiRes = await fetch('https://radiojar.com');
-    if (apiRes.ok) {
-      const json = await apiRes.json();
-      if (json.title || json.artist) {
-        res.setHeader('Cache-Control', 'no-store');
-        return res.status(200).json(json);
-      }
-    }
-
-    // 2. Jei API išjungtas, ištraukiame dainą tiesiogiai iš ICY garso srauto
-    const streamRes = await fetch('https://radiojar.com', {
-      headers: { 'Icy-MetaData': '1', 'User-Agent': 'Mozilla/5.0' },
+    const r = await fetch('https://playradio.lt' + Date.now(), {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
     });
+    const html = await r.text();
 
-    const metaint = Number(streamRes.headers.get('icy-metaint'));
-    if (metaint && streamRes.body) {
-      const reader = streamRes.body.getReader();
-      let received = 0;
-      const chunks = [];
+    // Ištraukiame pirmąjį Artist ir Title (Currently Playing)
+    const artistMatch = html.match(/Artist:\s*<\/[^>]+>\s*([^<]+)/i) || html.match(/Artist:\s*([^\n<]+)/i);
+    const titleMatch = html.match(/Title:\s*<\/[^>]+>\s*([^<]+)/i) || html.match(/Title:\s*([^\n<]+)/i);
 
-      while (received < metaint + 512) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        received += value.length;
-      }
-      reader.cancel();
+    const artist = artistMatch ? artistMatch.at(1).replace(/\*/g, '').trim() : '';
+    const title = titleMatch ? titleMatch.at(1).replace(/\*/g, '').trim() : '';
 
-      const full = Buffer.concat(chunks);
-      const metaLen = full[metaint] * 16;
-      if (metaLen > 0) {
-        const metaStr = full.subarray(metaint + 1, metaint + 1 + metaLen).toString('utf8');
-        const match = metaStr.match(/StreamTitle='([^']*)'/);
-        if (match && match[1]) {
-          res.setHeader('Cache-Control', 'no-store');
-          return res.status(200).json({ title: match[1] });
-        }
-      }
+    res.setHeader('Cache-Control', 'no-store');
+    if (artist && title) {
+      return res.status(200).json({ artist, title, full: `${artist} - ${title}` });
     }
-
     res.status(200).json({ title: 'PlayRadio.lt — More Hits!' });
   } catch (e) {
     res.status(200).json({ title: 'PlayRadio.lt — More Hits!' });
