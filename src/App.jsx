@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { STYLES, DEFAULT_POSTS, DEFAULT_TOP40, DEFAULT_SCHEDULE, DEFAULT_SETTINGS } from './data.js';
-import { supabase } from './supabase.js';
+import './App.css';
 
-const DAYS = [
+import { supabase } from './supabase.js';
+import AdminPanel from './AdminPanel.jsx';
+
+const DAYS = Array.of(
   { id: 1, name: 'Pirmadienis' }, { id: 2, name: 'Antradienis' },
   { id: 3, name: 'Trečiadienis' }, { id: 4, name: 'Ketvirtadienis' },
   { id: 5, name: 'Penktadienis' }, { id: 6, name: 'Šeštadienis' },
-  { id: 0, name: 'Sekmadienis' },
-];
+  { id: 0, name: 'Sekmadienis' }
+);
 
 export default function App() {
   const sPosts = useState(DEFAULT_POSTS), posts = sPosts.at(0), setPosts = sPosts.at(1);
@@ -20,21 +23,25 @@ export default function App() {
   const sPlay = useState(false), isPlaying = sPlay.at(0), setIsPlaying = sPlay.at(1);
   const sVol = useState(0.8), volume = sVol.at(0), setVolume = sVol.at(1);
   const sTrk = useState('PlayRadio.lt — More Hits!'), liveTrack = sTrk.at(0), setLiveTrack = sTrk.at(1);
-    const sModal = useState(false), showPlayerModal = sModal.at(0), setShowPlayerModal = sModal.at(1);
-    const sCov = useState('https://unsplash.com'), coverUrl = sCov.at(0), setCoverUrl = sCov.at(1);
+  const sModal = useState(false), showPlayerModal = sModal.at(0), setShowPlayerModal = sModal.at(1);
+  const sCov = useState('https://unsplash.com'), coverUrl = sCov.at(0), setCoverUrl = sCov.at(1);
+  const sMobMenu = useState(false), mobileMenuOpen = sMobMenu.at(0), setMobileMenuOpen = sMobMenu.at(1);
+
+  const sComName = useState(''), comName = sComName.at(0), setComName = sComName.at(1);
+  const sComText = useState(''), comText = sComText.at(0), setComText = sComText.at(1);
+  const sPages = useState({
+    scheduleImg: '',
+    scheduleText: '07:00 - Morning Hit Show\n11:00 - Dienos hitai\n16:00 - Drive Time\n20:00 - Vakaro TOP',
+    laidos: 'MORNING HIT SHOW (Darbo dienomis 07:00 - 10:00)\nPLAY RADIO TOP 40 (Penktadieniais 18:00)\nWEEKEND CLUB MIX (Šeštadieniais 21:00)',
+    playlist: 'PlayRadio.lt grojaraštis sudaromas iš karščiausių pasaulio ir Lietuvos pop, dance bei urban hitų 24/7.',
+    airplay: '1. Sabrina Carpenter - Espresso\n2. Billie Eilish - Birds of a Feather\n3. Teddy Swims - Lose Control',
+    metuTop: '1. Dua Lipa - Houdini\n2. Benson Boone - Beautiful Things\n3. Hozier - Too Sweet',
+    apieMus: 'PlayRadio.lt — More Hits! Tai internetinė radijo stotis, transliuojanti tik pačius populiariausius pasaulio ir Lietuvos hitus 24/7.',
+    kontaktai: 'El. paštas: info@playradio.lt\nReklama: reklama@playradio.lt\nMuzikos redakcija: music@playradio.lt',
+  }), pages = sPages.at(0), setPages = sPages.at(1);
 
 
   const audioRef = useRef(null);
-  const sA1 = useState('posts'), adminTab = sA1.at(0), setAdminTab = sA1.at(1);
-  const sEdit = useState(null), editId = sEdit.at(0), setEditId = sEdit.at(1);
-  const sA2 = useState(''), title = sA2.at(0), setTitle = sA2.at(1);
-  const sA3 = useState(''), content = sA3.at(0), setContent = sA3.at(1);
-  const sA4 = useState(''), photoUrl = sA4.at(0), setPhotoUrl = sA4.at(1);
-  const sA5 = useState(50), focusX = sA5.at(0), setFocusX = sA5.at(1);
-  const sA6 = useState(25), focusY = sA6.at(0), setFocusY = sA6.at(1);
-  const sA7 = useState(''), artist = sA7.at(0), setArtist = sA7.at(1);
-  const sA8 = useState(''), track = sA8.at(0), setTrack = sA8.at(1);
-
   useEffect(() => {
     const loadCloud = async () => {
       const { data } = await supabase.from('site_data').select('*');
@@ -43,12 +50,12 @@ export default function App() {
           if (row.key === 'posts' && Array.isArray(row.value)) setPosts(row.value);
           if (row.key === 'top40' && Array.isArray(row.value)) setTop40(row.value);
           if (row.key === 'settings' && row.value) setSettings(row.value);
+          if (row.key === 'pages' && row.value) setPages((prev) => ({ ...prev, ...row.value }));
         });
       }
     };
     loadCloud();
-  }, []);
- 
+  }, new Array());
 
   useEffect(() => {
     if (settings.bgImage) {
@@ -57,9 +64,9 @@ export default function App() {
       document.body.style.backgroundPosition = 'center center';
       document.body.style.backgroundAttachment = 'fixed';
     }
-  }, [settings]);
+  }, Array.of(settings));
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchSong = async () => {
       try {
         const { data } = await supabase
@@ -75,15 +82,46 @@ export default function App() {
     fetchSong();
     const timer = setInterval(fetchSong, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, new Array());
 
-      useEffect(() => {
+  useEffect(() => {
+    if (!selectedPost?.content) return;
+
+    const timer = setTimeout(() => {
+      if (selectedPost.content.includes('instagram-media')) {
+        if (window.instgrm) {
+          window.instgrm.Embeds.process();
+        } else {
+          const s = document.createElement('script');
+          const igHost = 'www' + '.' + 'instagram' + '.' + 'com';
+          s.src = `https://${igHost}/embed.js`;
+          s.async = true;
+          document.body.appendChild(s);
+        }
+      }
+
+      if (selectedPost.content.includes('twitter-tweet')) {
+        if (window.twttr?.widgets) {
+          window.twttr.widgets.load();
+        } else {
+          const s = document.createElement('script');
+          const twHost = 'platform' + '.' + 'twitter' + '.' + 'com';
+          s.src = `https://${twHost}/widgets.js`;
+          s.async = true;
+          document.body.appendChild(s);
+        }
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, Array.of(selectedPost?.id));
+
+  useEffect(() => {
     if (!liveTrack || liveTrack.includes('PlayRadio.lt')) return;
 
     const clean = liveTrack
       .replace(/[–—]/g, '-')
       .replace(/\([^)]*\)/g, '')
-      .replace(/\[[^\]]*\]/g, '')
       .replace(/\b(feat\.?|ft\.?|remix|edit|mix)\b.*/gi, '')
       .replace(/\s+/g, ' ')
       .trim();
@@ -91,9 +129,7 @@ export default function App() {
     const cbName = 'dzCb_' + Math.floor(Math.random() * 100000);
     window[cbName] = (res) => {
       const cover = res?.data?.at(0)?.album?.cover_big;
-      if (cover) {
-        setCoverUrl(cover);
-      }
+      if (cover) setCoverUrl(cover);
       delete window[cbName];
     };
 
@@ -105,11 +141,7 @@ export default function App() {
     return () => {
       script.remove();
     };
-  }, [liveTrack]);
-
-
-
-
+  }, Array.of(liveTrack));
   const saveCloud = async (key, value) => {
     const { error } = await supabase.from('site_data').upsert({ key, value }, { onConflict: 'key' });
     if (error) {
@@ -117,6 +149,7 @@ export default function App() {
       console.error(error);
     }
   };
+
   const togglePlay = (openModal = false) => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -139,100 +172,97 @@ export default function App() {
     }
   };
 
-
-  const addPost = (e) => {
+  const handleAddComment = (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
-    const finalPhoto = photoUrl.trim() || DEFAULT_POSTS.at(0).photoUrl;
-    let updated;
-    if (editId) {
-      updated = posts.map((p) => (p.id === editId ? { ...p, title: title.toUpperCase(), excerpt: content.slice(0, 115) + '...', content, photoUrl: finalPhoto, focusX, focusY } : p));
-      setEditId(null);
-    } else {
-      updated = [{ id: Date.now(), title: title.toUpperCase(), excerpt: content.slice(0, 115) + '...', content, photoUrl: finalPhoto, focusX, focusY }, ...posts];
-    }
-    setPosts(updated);
-    saveCloud('posts', updated);
-    setTitle(''); setContent(''); setPhotoUrl('');
+    if (!comName.trim() || !comText.trim() || !selectedPost) return;
+    const newComment = {
+      id: Date.now(),
+      author: comName.trim(),
+      text: comText.trim(),
+      date: new Date().toLocaleDateString('lt-LT'),
+    };
+    const updatedPosts = posts.map((p) => {
+      if (p.id === selectedPost.id) {
+        const updatedPost = { ...p, comments: Array.of(...(p.comments || new Array()), newComment) };
+        setSelectedPost(updatedPost);
+        return updatedPost;
+      }
+      return p;
+    });
+    setPosts(updatedPosts);
+    saveCloud('posts', updatedPosts);
+    setComName('');
+    setComText('');
   };
 
-  const menu = ['NAUJIENOS', 'PROGRAMA', 'LAIDOS', 'PLAYLIST', 'TOP 40', 'AIRPLAY TOP 200', 'METŲ TOP 100', 'APIE MUS', 'KONTAKTAI'];
+  const menu = Array.of('NAUJIENOS', 'PROGRAMA', 'LAIDOS', 'PLAYLIST', 'TOP 40', 'AIRPLAY TOP 200', 'METŲ TOP 100', 'APIE MUS', 'KONTAKTAI');
 
   return (
     <>
       <style>{STYLES}</style>
+      <audio ref={audioRef} preload="none" />
       <div className="wp-admin-bar">
         <div><strong>PlayRadio.lt</strong> — More Hits!</div>
         <button onClick={() => setIsAdmin(!isAdmin)}>{isAdmin ? '← Grįžti į svetainę' : '⚙ Valdymo skydelis'}</button>
       </div>
+
       {isAdmin ? (
-        <div className="dashboard-panel">
-          <aside className="dash-sidebar">
-            <button className={adminTab === 'posts' ? 'active' : ''} onClick={() => setAdminTab('posts')}>📝 Naujienos</button>
-            <button className={adminTab === 'charts' ? 'active' : ''} onClick={() => setAdminTab('charts')}>🔥 TOP 40</button>
-            <button className={adminTab === 'settings' ? 'active' : ''} onClick={() => setAdminTab('settings')}>📻 Fonas / Logo</button>
-          </aside>
-          <main className="dash-main">
-            {adminTab === 'posts' && (<>
-              <div className="dash-card">
-                <h3 style={{ marginBottom: 12 }}>{editId ? 'Redaguoti naujieną' : 'Naujas straipsnis'}</h3>
-                <form onSubmit={addPost}>
-                  <input className="dash-input" placeholder="Antraštė" value={title} onChange={(e) => setTitle(e.target.value)} required />
-                  <input className="dash-input" placeholder="Nuotraukos URL (https://...)" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} />
-                  {photoUrl && (<div style={{ marginBottom: 12, padding: 10, background: '#f8fafc', border: '1px solid #cbd5e1' }}>
-                    <div style={{ width: 260, height: 175, overflow: 'hidden', border: '2px solid #2271b1', marginBottom: 6 }}>
-                      <img src={photoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: `${focusX}% ${focusY}%` }} />
-                    </div>
-                    <label style={{ fontSize: 12 }}>X ({focusX}%): </label><input type="range" min="0" max="100" value={focusX} onChange={(e) => setFocusX(Number(e.target.value))} style={{ marginRight: 14 }} />
-                    <label style={{ fontSize: 12 }}>Y ({focusY}%): </label><input type="range" min="0" max="100" value={focusY} onChange={(e) => setFocusY(Number(e.target.value))} />
-                  </div>)}
-                  <textarea className="dash-textarea" rows="4" placeholder="Pilnas tekstas" value={content} onChange={(e) => setContent(e.target.value)} required />
-                  <button type="submit" className="dash-btn-primary">{editId ? 'Išsaugoti pakeitimus' : 'Publikuoti'}</button>
-                  {editId && <button type="button" onClick={() => { setEditId(null); setTitle(''); setContent(''); setPhotoUrl(''); }} style={{ marginLeft: 10, padding: '8px 14px' }}>Atšaukti</button>}
-                </form>
-              </div>
-              <div className="dash-card">{posts.map((p) => (<div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #eee' }}>
-                <span><strong>{p.title}</strong></span>
-                <div>
-                  <button className="dash-btn-primary" style={{ marginRight: 8, padding: '5px 10px', fontSize: 12 }} onClick={() => { setEditId(p.id); setTitle(p.title); setContent(p.content); setPhotoUrl(p.photoUrl); setFocusX(p.focusX || 50); setFocusY(p.focusY || 25); }}>Redaguoti</button>
-                  <button className="dash-btn-danger" onClick={() => { const u = posts.filter((x) => x.id !== p.id); setPosts(u); saveCloud('posts', u); }}>Trinti</button>
-                </div>
-              </div>))}</div>
-            </>)}
-            {adminTab === 'charts' && (<div className="dash-card">
-              <form onSubmit={(e) => { e.preventDefault(); if (artist && track) { const u = [...top40, { artist, title: track }]; setTop40(u); saveCloud('top40', u); setArtist(''); setTrack(''); } }} style={{ display: 'flex', gap: 8 }}>
-                <input className="dash-input" placeholder="Atlikėjas" value={artist} onChange={(e) => setArtist(e.target.value)} />
-                <input className="dash-input" placeholder="Daina" value={track} onChange={(e) => setTrack(e.target.value)} />
-                <button type="submit" className="dash-btn-primary" style={{ height: 38 }}>Pridėti</button>
-              </form>
-              {top40.map((t, i) => (<div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
-                <span>{i + 1}. <strong>{t.artist}</strong> — {t.title}</span><button className="dash-btn-danger" onClick={() => { const u = top40.filter((_, idx) => idx !== i); setTop40(u); saveCloud('top40', u); }}>X</button>
-              </div>))}
-            </div>)}
-            {adminTab === 'settings' && (<div className="dash-card">
-              <h3 style={{ marginBottom: 14 }}>Mėnesinis Fonas ir Logotipas</h3>
-              <label style={{ fontWeight: 700 }}>Fono nuotraukos URL:</label>
-              <input className="dash-input" placeholder="https://..." value={settings.bgImage || ''} onChange={(e) => { const u = { ...settings, bgImage: e.target.value }; setSettings(u); saveCloud('settings', u); }} />
-              <label style={{ fontWeight: 700 }}>Logotipo URL:</label>
-              <input className="dash-input" placeholder="https://..." value={settings.logoUrl || ''} onChange={(e) => { const u = { ...settings, logoUrl: e.target.value }; setSettings(u); saveCloud('settings', u); }} />
-            </div>)}
-          </main>
-        </div>
+        <AdminPanel
+          posts={posts}
+          setPosts={setPosts}
+          top40={top40}
+          setTop40={setTop40}
+          settings={settings}
+          setSettings={setSettings}
+          pages={pages}
+          setPages={setPages}
+          saveCloud={saveCloud}
+        />
       ) : (
         <div className="site-wrapper">
-          <aside className="left-sidebar" style={{ paddingTop: 205 }}>
-            <ul className="side-menu">
-                            <li>
-                <button className={`play-item ${isPlaying ? 'playing' : ''}`} onClick={() => togglePlay(true)}>
+                    <aside className="left-sidebar">
+            <button
+              type="button"
+              className="mobile-menu-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? '✕ UŽDARYTI MENIU' : '☰ MENIU IR GROTUVAS'}
+            </button>
+
+            <ul className={`side-menu ${mobileMenuOpen ? 'open' : ''}`}>
+              <li>
+                <button
+                  type="button"
+                  className={`play-item ${isPlaying ? 'playing' : ''}`}
+                  onClick={() => {
+                    togglePlay(true);
+                    setMobileMenuOpen(false);
+                  }}
+                >
                   {isPlaying ? '🔊 GROJA (ATIDARYTI INFO)' : '► PLAY / GROTI'}
                 </button>
               </li>
 
-              {menu.map((m) => (<li key={m}><button className={activeTab === m && !selectedPost ? 'active' : ''} onClick={() => { setActiveTab(m); setSelectedPost(null); }}>{m}</button></li>))}
+              {menu.map((m) => (
+                <li key={m}>
+                  <button
+                    type="button"
+                    className={activeTab === m && !selectedPost ? 'active' : ''}
+                    onClick={() => {
+                      setActiveTab(m);
+                      setSelectedPost(null);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    {m}
+                  </button>
+                </li>
+              ))}
             </ul>
           </aside>
+
           <main className="main-content-column">
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 12 }}>
+             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 12 }}>
               <svg width="285" height="118" viewBox="0 0 310 125" style={{ display: 'block', overflow: 'visible' }}>
                 <g transform="rotate(-3 145 65)">
                   <polygon points="15,66 255,66 268,80 28,80" fill="#9ca3af" />
@@ -250,148 +280,113 @@ export default function App() {
               <div style={{ background: 'rgba(255, 255, 255, 0.88)', color: '#09090b', padding: '6px 14px', borderRadius: 4, marginTop: -6, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
                 <div style={{ fontFamily: 'Arial Black, Impact, sans-serif', fontWeight: 900, fontSize: 13.5 }}>CHRISTMAS SPECIAL 24.12-26.12</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 4 }}>
-                  <div><div style={{ fontSize: 18, lineHeight: 1 }}>👑</div><div style={{ fontFamily: 'Georgia, serif', fontWeight: 900, fontSize: 15 }}>TOP 100</div><div style={{ fontSize: 8.5, fontWeight: 700 }}>OF THE YEAR</div></div>
-                  <div style={{ fontFamily: 'Georgia, serif', fontSize: 25, fontWeight: 700 }}>31.12</div>
-                  <div style={{ fontSize: 10.5, fontWeight: 800, lineHeight: 1.15, textAlign: 'left' }}>+2UTC<br />TIME<br />ZONE</div>
+                  <div>
+                    <div style={{ fontSize: 18, lineHeight: 1 }}>👑</div>
+                    <div style={{ fontFamily: 'Georgia, serif', fontWeight: 900, fontSize: 15 }}>TOP 100</div>
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, textAlign: 'left', lineHeight: 1.3 }}>
+                    <div>24.12 — 12:00</div>
+                    <div>26.12 — 14:00</div>
+                  </div>
                 </div>
               </div>
             </div>
+
             <div className="content-box">
               {selectedPost ? (<div>
                 <button onClick={() => setSelectedPost(null)} style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 4, cursor: 'pointer', marginBottom: 16 }}>← Grįžti</button>
                 <h1 className="page-heading">{selectedPost.title}</h1>
-                <img src={selectedPost.photoUrl} alt="" style={{ maxWidth: '100%', borderRadius: 4, marginBottom: 16 }} />
-                <p style={{ lineHeight: 1.75 }}>{selectedPost.content}</p>
+                {selectedPost.photoUrl && <img src={selectedPost.photoUrl} alt="" style={{ maxWidth: '100%', borderRadius: 4, marginBottom: 16 }} />}
+                {selectedPost.source && <div style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', marginBottom: 8 }}>Šaltinis: {selectedPost.source}</div>}
+                <div style={{ lineHeight: 1.75 }} dangerouslySetInnerHTML={{ __html: selectedPost.content || '' }} />
+
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: '2px solid #e5e7eb' }}>
+                  <h3 style={{ marginBottom: 14, fontSize: 16 }}>Komentarai ({(selectedPost.comments || new Array()).length})</h3>
+                  <form onSubmit={handleAddComment} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20, background: '#f8fafc', padding: 14, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                    <input className="dash-input" placeholder="Jūsų vardas" value={comName} onChange={(e) => setComName(e.target.value)} required style={{ margin: 0 }} />
+                    <textarea className="dash-textarea" rows="3" placeholder="Parašykite komentarą..." value={comText} onChange={(e) => setComText(e.target.value)} required style={{ margin: 0 }} />
+                    <button type="submit" className="dash-btn-primary" style={{ alignSelf: 'flex-start' }}>Paskelbti komentarą</button>
+                  </form>
+                  {(selectedPost.comments || new Array()).map((c) => (
+                    <div key={c.id} style={{ padding: '12px 14px', borderBottom: '1px solid #e5e7eb', background: '#fff' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', marginBottom: 4 }}>
+                        <strong style={{ color: '#0f172a' }}>{c.author}</strong>
+                        <span>{c.date}</span>
+                      </div>
+                      <div style={{ fontSize: 14, color: '#1e293b' }}>{c.text}</div>
+                    </div>
+                  ))}
+                </div>
               </div>) : activeTab === 'NAUJIENOS' ? (<>
                 <h1 className="page-heading">Naujienos</h1>
                 <div className="fox-grid">{posts.map((p) => (<article className="fox-card" key={p.id} onClick={() => setSelectedPost(p)}>
                   <div className="fox-card-img-wrap"><img src={p.photoUrl} alt="" className="fox-card-img" style={{ objectPosition: `${p.focusX || 50}% ${p.focusY || 25}%` }} /></div>
-                  <div className="fox-card-body"><h2 className="fox-card-title">{p.title}</h2><p className="fox-card-excerpt">{p.excerpt}</p></div>
+                  <div className="fox-card-body">
+                    {p.source && <div style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>{p.source}</div>}
+                    <h2 className="fox-card-title">{p.title}</h2>
+                    <p className="fox-card-excerpt">{p.excerpt}</p>
+                  </div>
                 </article>))}</div>
               </>) : activeTab === 'TOP 40' ? (<>
                 <h1 className="page-heading">TOP 40</h1>
                 <table className="chart-table"><tbody>{top40.map((t, i) => (<tr key={i}><td style={{ color: '#ef4444', fontWeight: 700, width: 45 }}>{i + 1}</td><td><strong>{t.artist}</strong> — {t.title}</td></tr>))}</tbody></table>
               </>) : activeTab === 'PROGRAMA' ? (<>
                 <h1 className="page-heading">Programa</h1>
+                {pages.scheduleImg && <img src={pages.scheduleImg} alt="Programa" style={{ maxWidth: '100%', borderRadius: 4, marginBottom: 16, display: 'block' }} />}
                 <div className="day-tabs">{DAYS.map((d) => (<button key={d.id} className={`day-tab ${selectedDay === d.id ? 'active' : ''}`} onClick={() => setSelectedDay(d.id)}>{d.name}</button>))}</div>
-                <table className="chart-table"><tbody>{(DEFAULT_SCHEDULE[selectedDay] || []).map((s, i) => (<tr key={i}><td>{s}</td></tr>))}</tbody></table>
-              </>) : (<><h1 className="page-heading">{activeTab}</h1><p>PlayRadio.lt — More Hits! Skiltis „{activeTab}“.</p></>)}
+                <table className="chart-table"><tbody>{(DEFAULT_SCHEDULE[selectedDay] || new Array()).map((s, i) => (<tr key={i}><td>{s}</td></tr>))}</tbody></table>
+                {pages.scheduleText && <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', marginTop: 16, lineHeight: 1.7 }}>{pages.scheduleText}</pre>}
+              </>) : (<>
+                <h1 className="page-heading">{activeTab}</h1>
+                {activeTab === 'PLAYLIST' && <p style={{ marginBottom: 12, color: '#dc2626', fontWeight: 700 }}>Šiuo metu groja: {liveTrack}</p>}
+                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.7 }}>
+                  {activeTab === 'LAIDOS' && pages.laidos}
+                  {activeTab === 'PLAYLIST' && pages.playlist}
+                  {activeTab === 'AIRPLAY TOP 200' && pages.airplay}
+                  {activeTab === 'METŲ TOP 100' && pages.metuTop}
+                  {activeTab === 'APIE MUS' && pages.apieMus}
+                  {activeTab === 'KONTAKTAI' && pages.kontaktai}
+                </pre>
+              </>)}
             </div>
           </main>
         </div>
       )}
+
       {showPlayerModal && (
-        <div
-          onClick={() => setShowPlayerModal(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.45)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#191512',
-              color: '#ffffff',
-              width: 310,
-              padding: '24px 24px 28px',
-              textAlign: 'center',
-              position: 'relative',
-              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.65)',
-              fontFamily: 'Arial, Helvetica, sans-serif',
-            }}
-          >
-            {/* Mažas uždarymo kryžiukas viršuje dešinėje */}
-            <button
-              onClick={() => setShowPlayerModal(false)}
-              style={{
-                position: 'absolute',
-                top: 6,
-                right: 8,
-                background: 'transparent',
-                border: 'none',
-                color: 'rgba(255,255,255,0.45)',
-                fontSize: 15,
-                cursor: 'pointer',
-              }}
-              title="Uždaryti (muzika gros toliau)"
-            >
-              ✕
-            </button>
-
-            {/* Kvadratinis albumo viršelis */}
+        <div onClick={() => setShowPlayerModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#191512', color: '#fff', width: 310, padding: '24px 24px 28px', textAlign: 'center', position: 'relative', boxShadow: '0 24px 60px rgba(0,0,0,0.7)' }}>
+            <button onClick={() => setShowPlayerModal(false)} style={{ position: 'absolute', top: 6, right: 8, background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: 16, cursor: 'pointer' }}>✕</button>
             <div style={{ width: 262, height: 262, margin: '0 auto 18px', background: '#09090b', overflow: 'hidden' }}>
-              <img
-                src={coverUrl}
-                alt={liveTrack}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
+              <img src={coverUrl} alt={liveTrack} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             </div>
-
-            {/* Atlikėjas ir daina (identiškai kaip nuotraukoje) */}
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.2px', marginBottom: 4, lineHeight: 1.2 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>
               {liveTrack.includes(' - ') ? liveTrack.split(' - ').at(0) : 'PlayRadio.lt'}
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: '#f3f4f6', marginBottom: 22 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#e5e7eb', marginBottom: 22 }}>
               {liveTrack.includes(' - ') ? liveTrack.split(' - ').slice(1).join(' - ') : 'More Hits!'}
             </div>
-
-            {/* Apvalus minimalistinis „Stop“ / „Play“ mygtukas */}
-            <button
-              onClick={() => togglePlay(false)}
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: '50%',
-                background: 'transparent',
-                border: '1.5px solid rgba(255, 255, 255, 0.75)',
-                color: '#ffffff',
-                fontSize: 11,
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <button onClick={() => togglePlay(false)} style={{ width: 46, height: 46, borderRadius: '50%', background: 'transparent', border: '1.5px solid rgba(255,255,255,0.8)', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
               {isPlaying ? 'Stop' : 'Play'}
             </button>
           </div>
         </div>
       )}
-               <div className="bottom-radio-bar">
+
+      <div className="sticky-player" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 58, background: '#09090b', color: '#fff', borderTop: '1px solid #27272a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', zIndex: 9000 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="player-circle-btn" onClick={togglePlay}>{isPlaying ? '■' : '►'}</button>
+          <button onClick={() => togglePlay(false)} style={{ width: 38, height: 38, borderRadius: '50%', background: '#ef4444', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer' }}>
+            {isPlaying ? '■' : '►'}
+          </button>
           <div>
-            <div style={{ fontSize: 11, color: isPlaying ? '#22c55e' : '#ef4444', fontWeight: 800 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: isPlaying ? '#22c55e' : '#ef4444' }}>
               {isPlaying ? '● GROJA TIESIOGIAI' : '○ ETERYJE'}
             </div>
             <div style={{ fontSize: 14, fontWeight: 600 }}>{liveTrack}</div>
           </div>
         </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={volume}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setVolume(v);
-            if (audioRef.current) audioRef.current.volume = v;
-          }}
-          style={{ width: 90 }}
-        />
+        <input type="range" min="0" max="1" step="0.05" value={volume} onChange={(e) => { const v = Number(e.target.value); setVolume(v); if (audioRef.current) audioRef.current.volume = v; }} style={{ width: 90 }} />
       </div>
-
-
-      <audio ref={audioRef} preload="none" />
     </>
   );
 }
