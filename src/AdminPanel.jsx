@@ -110,32 +110,80 @@ export default function AdminPanel({
               </form>
             </div>
 
-            <div className="dash-card">
-              <h3 style={{ marginBottom: 10 }}>Publikuotos naujienos ({posts.length})</h3>
-              {posts.map((p) => (
-                <div key={p.id} style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span><strong>{p.title}</strong></span>
-                    <div>
-                      <button className="dash-btn-primary" style={{ marginRight: 8, padding: '4px 10px', fontSize: 12 }} onClick={() => {
-                        setEditId(p.id); setTitle(p.title); setSource(p.source || ''); setContent(p.content); setPhotoUrl(p.photoUrl); setFocusX(p.focusX || 50); setFocusY(p.focusY || 25);
-                      }}>Redaguoti</button>
-                      <button className="dash-btn-danger" onClick={() => { const u = posts.filter((x) => x.id !== p.id); setPosts(u); saveCloud('posts', u); }}>Ištrinti</button>
-                    </div>
-                  </div>
-                  {(p.comments || new Array()).length > 0 && (
-                    <div style={{ marginTop: 6, paddingLeft: 12, borderLeft: '2px solid #cbd5e1', fontSize: 12 }}>
-                      {(p.comments || new Array()).map((c) => (
-                        <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#475569' }}>
-                          <span>💬 <strong>{c.author}:</strong> {c.text}</span>
-                          <button onClick={() => deleteComment(p.id, c.id)} style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}>[Trinti]</button>
+                        {editId ? (
+              <div className="dash-card">
+                <h3 style={{ marginBottom: 12 }}>
+                  Šio straipsnio komentarai ({(posts.find((x) => x.id === editId)?.comments || new Array()).length})
+                </h3>
+                {(posts.find((x) => x.id === editId)?.comments || new Array()).length === 0 ? (
+                  <p style={{ color: '#64748b', fontSize: 13 }}>Šiame straipsnyje komentarų dar nėra.</p>
+                ) : (
+                  (posts.find((x) => x.id === editId)?.comments || new Array()).map((c) => (
+                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', marginBottom: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 4 }}>
+                      <div>
+                        <div style={{ fontSize: 13, marginBottom: 2 }}>
+                          <strong>{c.author}</strong> <span style={{ color: '#64748b', fontSize: 12 }}>({c.date})</span>
                         </div>
-                      ))}
+                        <div style={{ fontSize: 14, color: '#1e293b' }}>{c.text}</div>
+                      </div>
+                      <button type="button" className="dash-btn-danger" onClick={() => deleteComment(editId, c.id)}>
+                        Ištrinti
+                      </button>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="dash-card">
+                <h3 style={{ marginBottom: 10 }}>Publikuotos naujienos ({posts.length})</h3>
+                {posts.map((p) => {
+                  const comCount = (p.comments || new Array()).length;
+                  return (
+                    <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #eee', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <strong>{p.title}</strong>
+                        {comCount > 0 && (
+                          <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
+                            💬 {comCount}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          className="dash-btn-primary"
+                          style={{ marginRight: 8, padding: '4px 10px', fontSize: 12 }}
+                          onClick={() => {
+                            setEditId(p.id);
+                            setTitle(p.title);
+                            setSource(p.source || '');
+                            setContent(p.content);
+                            setPhotoUrl(p.photoUrl);
+                            setFocusX(p.focusX || 50);
+                            setFocusY(p.focusY || 25);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        >
+                          Redaguoti
+                        </button>
+                        <button
+                          type="button"
+                          className="dash-btn-danger"
+                          onClick={() => {
+                            const u = posts.filter((x) => x.id !== p.id);
+                            setPosts(u);
+                            saveCloud('posts', u);
+                          }}
+                        >
+                          Ištrinti
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
           </>
         )}
         {section === 'charts' && (

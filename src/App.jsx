@@ -27,8 +27,24 @@ export default function App() {
   const sCov = useState('https://unsplash.com'), coverUrl = sCov.at(0), setCoverUrl = sCov.at(1);
   const sMobMenu = useState(false), mobileMenuOpen = sMobMenu.at(0), setMobileMenuOpen = sMobMenu.at(1);
 
-  const sComName = useState(''), comName = sComName.at(0), setComName = sComName.at(1);
+ const sComName = useState(''), comName = sComName.at(0), setComName = sComName.at(1);
+  const sComEmail = useState(''), comEmail = sComEmail.at(0), setComEmail = sComEmail.at(1);
   const sComText = useState(''), comText = sComText.at(0), setComText = sComText.at(1);
+  const makeCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let out = '';
+    for (let i = 0; i < 4; i++) {
+      out += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return out;
+  };
+
+ 
+  const sCapCode = useState(makeCode), captchaCode = sCapCode.at(0), setCaptchaCode = sCapCode.at(1);
+  const captchaCanvasRef = useRef(null);
+
+ 
+ 
   const sPages = useState({
     scheduleImg: '',
     scheduleText: '07:00 - Morning Hit Show\n11:00 - Dienos hitai\n16:00 - Drive Time\n20:00 - Vakaro TOP',
@@ -172,15 +188,88 @@ export default function App() {
     }
   };
 
-  const handleAddComment = (e) => {
+  
+  const sCapIn = useState(''), captchaInput = sCapIn.at(0), setCaptchaInput = sCapIn.at(1);
+  const sCapNums = useState(() => ({
+    a: Math.floor(Math.random() * 9) + 1,
+    b: Math.floor(Math.random() * 9) + 1,
+  })), captchaNums = sCapNums.at(0), setCaptchaNums = sCapNums.at(1);
+
+  const refreshCaptcha = () => {
+    setCaptchaNums({
+      a: Math.floor(Math.random() * 9) + 1,
+      b: Math.floor(Math.random() * 9) + 1,
+    });
+    setCaptchaInput('');
+  };
+   useEffect(() => {
+    const canvas = captchaCanvasRef.current;
+    if (!canvas || !selectedPost) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // 1. Pilkšvai smėlinis gradientinis fonas
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, '#e2dfd9');
+    grad.addColorStop(0.5, '#b8b3aa');
+    grad.addColorStop(1, '#d6d2cb');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 2. Grūdėtas taškelių triukšmas (kaip originaliame paveikslėlyje)
+    for (let i = 0; i < 650; i++) {
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.45)' : 'rgba(60,55,50,0.22)';
+      ctx.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5);
+    }
+
+    // 3. 4 didelės spalvotos raidės/skaičiai su šviesiu kontūru
+    const colors = Array.of('#7c68c9', '#6d78d8', '#994848', '#837be0');
+    ctx.font = 'bold 34px Arial, sans-serif';
+    ctx.textBaseline = 'middle';
+
+    for (let i = 0; i < captchaCode.length; i++) {
+      ctx.save();
+      const x = 18 + i * 32;
+      const y = h / 2 + (i % 2 === 0 ? -2 : 4);
+      ctx.translate(x, y);
+      ctx.rotate((Math.random() - 0.5) * 0.18);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.strokeText(captchaCode.charAt(i), 0, 0);
+      ctx.fillStyle = colors.at(i % colors.length);
+      ctx.fillText(captchaCode.charAt(i), 0, 0);
+      ctx.restore();
+    }
+
+    // 4. Stora mėlyna įstriža linija per dešinį kraštą
+    ctx.strokeStyle = '#1d4ed8';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.65, h);
+    ctx.lineTo(w, h * 0.35);
+    ctx.stroke();
+  }, Array.of(captchaCode, selectedPost?.id));
+
+ const handleAddComment = (e) => {
     e.preventDefault();
-    if (!comName.trim() || !comText.trim() || !selectedPost) return;
+    if (!comName.trim() || !comEmail.trim() || !comText.trim() || !selectedPost) return;
+
+    if (captchaInput.trim().toLowerCase() !== captchaCode.toLowerCase()) {
+      alert('Neteisingas CAPTCHA kodas! Bandykite dar kartą.');
+      refreshCaptcha();
+      return;
+    }
+
     const newComment = {
       id: Date.now(),
       author: comName.trim(),
+      email: comEmail.trim(),
       text: comText.trim(),
       date: new Date().toLocaleDateString('lt-LT'),
     };
+
     const updatedPosts = posts.map((p) => {
       if (p.id === selectedPost.id) {
         const updatedPost = { ...p, comments: Array.of(...(p.comments || new Array()), newComment) };
@@ -189,10 +278,13 @@ export default function App() {
       }
       return p;
     });
+
     setPosts(updatedPosts);
     saveCloud('posts', updatedPosts);
     setComName('');
+    setComEmail('');
     setComText('');
+    refreshCaptcha();
   };
 
   const menu = Array.of('NAUJIENOS', 'PROGRAMA', 'LAIDOS', 'PLAYLIST', 'TOP 40', 'AIRPLAY TOP 200', 'METŲ TOP 100', 'APIE MUS', 'KONTAKTAI');
@@ -302,9 +394,52 @@ export default function App() {
 
                 <div style={{ marginTop: 32, paddingTop: 20, borderTop: '2px solid #e5e7eb' }}>
                   <h3 style={{ marginBottom: 14, fontSize: 16 }}>Komentarai ({(selectedPost.comments || new Array()).length})</h3>
-                  <form onSubmit={handleAddComment} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20, background: '#f8fafc', padding: 14, borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                    <input className="dash-input" placeholder="Jūsų vardas" value={comName} onChange={(e) => setComName(e.target.value)} required style={{ margin: 0 }} />
-                    <textarea className="dash-textarea" rows="3" placeholder="Parašykite komentarą..." value={comText} onChange={(e) => setComText(e.target.value)} required style={{ margin: 0 }} />
+                   <form onSubmit={handleAddComment} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20, background: '#f8fafc', padding: 14, borderRadius: 6, border: '1px solid #e2e8f0', color: '#0f172a' }}>
+                    <input className="dash-input" placeholder="Jūsų vardas *" value={comName} onChange={(e) => setComName(e.target.value)} required style={{ margin: 0 }} />
+                    <input className="dash-input" type="email" placeholder="El. paštas (nebus rodomas) *" value={comEmail} onChange={(e) => setComEmail(e.target.value)} required style={{ margin: 0 }} />
+                    <textarea className="dash-textarea" rows="3" placeholder="Parašykite komentarą... *" value={comText} onChange={(e) => setComText(e.target.value)} required style={{ margin: 0 }} />
+                    
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <canvas
+                          ref={captchaCanvasRef}
+                          width="155"
+                          height="50"
+                          style={{ border: '1px solid #9ca3af', display: 'block' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={refreshCaptcha}
+                          title="Atnaujinti kodą"
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            border: '1px solid #94a3b8',
+                            background: 'radial-gradient(circle at 30% 30%, #ffffff, #cbd5e1)',
+                            color: '#1e293b',
+                            fontSize: 15,
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                          }}
+                        >
+                          ↻
+                        </button>
+                      </div>
+                      <input
+                        className="dash-input"
+                        placeholder="CAPTCHA Kodas *"
+                        value={captchaInput}
+                        onChange={(e) => setCaptchaInput(e.target.value)}
+                        required
+                        style={{ width: 155, margin: 0 }}
+                      />
+                    </div>
+
                     <button type="submit" className="dash-btn-primary" style={{ alignSelf: 'flex-start' }}>Paskelbti komentarą</button>
                   </form>
                   {(selectedPost.comments || new Array()).map((c) => (
